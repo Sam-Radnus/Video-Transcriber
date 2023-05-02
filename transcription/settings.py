@@ -52,6 +52,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'transcription.urls'
 
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800
+
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

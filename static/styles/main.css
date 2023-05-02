@@ -29,7 +29,36 @@ div#search_bar input,div#search_bar button{
 #progress {
     width: 0%;
     height: 100%;
+    position: relative;
     background-color: #4CAF50;
     border-radius: 5px;
     transition: width 0.3s ease-in-out;
 }
+.code-segment {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+pre {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    padding-right: 50px;
+}
+
+code {
+    font-size: 16px;
+    font-family: monospace;
+    color: #333;
+   
+    white-space: pre-wrap;
+}
+#progressText {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1rem;
+  }
+  

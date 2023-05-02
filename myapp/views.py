@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.conf import settings
 import requests
-import os
+import os,uuid
 import random,string
 import speech_recognition as sr
 from pydub import AudioSegment
@@ -13,7 +13,7 @@ from .models import Video
 import json
 import aiohttp
 import io
-import pafy
+import pafy,base64
 import time
 import moviepy.editor as mp
 from pytube import YouTube
@@ -26,49 +26,50 @@ def home_page(request):
 def download_video(request):
     data=json.loads(request.body)
     video_url=data['video_url']
-    print(video_url)
-    i=0
-    video=None
-    text=None
-    result="Video Cannot be Parsed,Please try again"
-# Create a Pafy object
-    while text is None:
-        i+=1
-        print(i)
-        try:
-            video = YouTube(video_url)
-            stream = video.streams.get_highest_resolution()
-            filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4'
-            stream.download(os.path.join(settings.BASE_DIR,'temp'),filename=filename)
-            text=convert_to_audio(filename)
-            print("text:",text)
-            result=text
-            return JsonResponse({'text':text})
-        except:
-            time.sleep(2)
-    return JsonResponse({'text':result})
-    '''
-    print(video_url)
-    yt = pytube.YouTube(video_url)
-    print(yt)
-    print(3)
-    print(yt.streams)
-    stream = yt.streams.get_lowest_resolution()
-    print(stream)
-    print(2)
-    print(stream)
-    video_filename = f"{yt.title}.mp4"
-    print(video_filename)
-    print(3)
-    video_path = os.path.join(settings.BASE_DIR, 'temp', video_filename)
-    print(video_path)
-    stream.download(output_path=os.path.join(settings.BASE_DIR, 'temp'), filename=yt.title)
-    print(4)
-    with open(video_path, 'rb') as f:
-        response = HttpResponse(f.read(), content_type='video/mp4')
-        response['Content-Disposition'] = f'attachment; filename="{video_filename}"'
-    return response
-    '''
+   
+    is_file=data['file']
+    print(is_file)
+    if is_file:
+      
+        video_data = base64.b64decode(video_url)
+        filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4' # You can change the filename and extension as per your requirement
+        filepath = os.path.join(settings.BASE_DIR,'temp', filename) # change the path as per your project structure
+        print(filepath)
+        with open(filepath, 'wb') as f:
+            f.write(video_data)
+        text=convert_to_audio(filename)
+        return JsonResponse({'text':text})
+    elif not is_file:
+        print(video_url)
+        i=0
+        video=None
+        text=None
+        result="Video Cannot be Parsed,Please try again"
+# Cr    eate a Pafy object
+        while i<100:
+            i+=1
+            print(i)
+            try:
+                video = YouTube(video_url) 
+                stream = video.streams.get_highest_resolution()
+                filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4'
+                stream.download(os.path.join(settings.BASE_DIR,'temp'),filename=filename)
+                text=convert_to_audio(filename)
+                print("text:",text)
+                result=text
+                return JsonResponse({'text':text})
+            except:
+                try:
+                    stream = video.streams.filter(progressive=True).order_by('resolution').first()
+                    filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4'
+                    stream.download(os.path.join(settings.BASE_DIR,'temp'),filename=filename)
+                    text=convert_to_audio(filename)
+                    print("text:",text)
+                    result=text
+                    return JsonResponse({'text':text})
+                except:
+                    time.sleep(2)
+        return JsonResponse({'text':result})
 
 # def download_video(video_url):
 
