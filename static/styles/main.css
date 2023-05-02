@@ -1,0 +1,35 @@
+div#search_bar{
+    position:absolute;
+    top: 50%;
+    left:50%;
+    transform: translate(-50%,-50%);
+    width:50vw;
+    
+    height:20vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+div#search_bar input,div#search_bar button{
+    display: inline-block;
+    vertical-align: middle;
+    margin-bottom: 0;
+    margin-top: 30px;
+}
+
+#progressBar {
+    width: 100%;
+    height: 30px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    display: none;
+}
+
+#progress {
+    width: 0%;
+    height: 100%;
+    background-color: #4CAF50;
+    border-radius: 5px;
+    transition: width 0.3s ease-in-out;
+}

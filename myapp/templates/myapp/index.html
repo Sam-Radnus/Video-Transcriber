@@ -1,0 +1,69 @@
+{% extends 'main.html' %}
+{% block content %}
+
+<div id="search_bar">
+  <div>
+    <h1>Video Transcriptor</h1>
+  </div>
+  <div class="input-group mb-3">
+    <input id="yt_url" type="text" class="form-control" placeholder="Enter Video URL" aria-label="Recipient's username"
+      aria-describedby="button-addon2">
+    <button class="btn btn-outline-secondary" type="button" id="button-addon2">Search</button>
+  </div>
+  <div id="progressBar">
+    <div id="progress"></div>
+  </div>
+  <div>
+    <h3>{{text}}</h3>
+  </div>
+</div>
+<script>
+
+  const button = document.querySelector("#button-addon2");
+  const input = document.querySelector("input.form-control");
+  const text = document.querySelector("div h3");
+  const progressBar = document.getElementById('progress');
+  const progressBarContainer = document.getElementById('progressBar');
+  const startButton = document.getElementById('startButton');
+
+  function progress() {
+    progressBarContainer.style.display = 'block';
+    let progress = 0;
+    const totalTime = 50000; // 50 seconds
+    const intervalTime=100;
+    const interval = setInterval(() => {
+      if(progress>=100){
+        progress=0;
+        progressBar.style.width = `${progress}%`;
+      }
+      progress+=intervalTime/totalTime*100;
+      progressBar.style.width = `${progress}%`;
+    }, intervalTime);
+  }
+  button.addEventListener("click", () => {
+    const url = document.getElementById('yt_url').value;
+    alert(url)
+    progress();
+    fetch("http://127.0.0.1:8000/convert", {
+      method: "POST",
+      body: JSON.stringify({ video_url: url }),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        progressBarContainer.style.display='none';
+        text.textContent = data.text
+      })
+      .catch(error => {
+       
+        console.error(error);
+      });
+  });
+
+
+
+</script>
+{% endblock content %}
