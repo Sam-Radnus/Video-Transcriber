@@ -1,6 +1,9 @@
 *{
     font-family: 'Roboto Condensed', sans-serif;
 }
+body{
+    background-color: red;
+}
 div#search_bar{
     position:absolute;
     top: 50%;
