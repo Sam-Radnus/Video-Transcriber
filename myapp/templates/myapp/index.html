@@ -6,9 +6,10 @@
     <h1>Video Transcriptor</h1>
   </div>
   <div class="input-group mb-3">
+    
     <input id="yt_url" type="text" class="form-control" placeholder="Enter Video URL" aria-label="Recipient's username"
       aria-describedby="button-addon2">
-    <button class="btn btn-outline-secondary" type="button" id="button-addon2">Search</button>
+    <button class="btn btn-outline-secondary" type="button" id="button-addon2">Transcribe</button>
     <button class="btn btn-outline-primary" id="switch" type="button" id="button-addon2">Browse</button>
   </div>
   <div id="progressBar">
@@ -16,25 +17,22 @@
     <div id="progressText">0%</div>
   </div>
   <div>
-    <div class="code-segment">
-      <pre>
-          <code>
-            you will get your results here
-          </code>
-      </pre>
-    </div>
+    
   </div>
 </div>
 <script>
 
   const button = document.querySelector("#button-addon2");
   const input = document.querySelector("input.form-control");
-  const text = document.querySelector("div div.code-segment pre code ");
+ 
   const progressBar = document.getElementById('progress');
   const progressBarContainer = document.getElementById('progressBar');
   const progressText = document.getElementById('progressText');
   const startButton = document.getElementById('startButton');
   const toggle = document.getElementById('switch');
+  let progress = 0;
+  let interval;
+
   toggle.addEventListener('click', () => {
     if (toggle.textContent === "Browse") {
       toggle.textContent = "URL";
@@ -48,27 +46,35 @@
       input.type = "text";
     }
   })
-  function progress() {
+  function progressFunc() {
+
     progressBarContainer.style.display = 'block';
-    let progress = 0;
-    const totalTime = 500000; // 50 seconds
+    
+    const totalTime = 100000; // 50 seconds
     const intervalTime = 100;
     
-    const interval = setInterval(() => {
+    interval = setInterval(() => {
       if (progress >= 100) {
-        progress = 0;
+        progress ="Loading...";
         progressBar.style.width = `${progress}%`;
+        clearInterval(interval); 
       }
       progress += intervalTime / totalTime * 100;
-      progressBar.style.width = `${progress}%`;
+      progressBar.style.width = `${progress.toFixed(0)}%`;
       progressText.textContent = `${progress.toFixed(0)}%`;
     }, intervalTime);
+
   }
   button.addEventListener("click", () => {
-    let url = document.getElementById('yt_url').value;
-    text.textContent = "";
-    progress();
     var is_file = toggle.textContent === "URL" ? true : false;
+    let url = document.getElementById('yt_url').value;
+    if(input.value===""){
+          str=toggle.textContent === "URL" ? "Please select a File" : "Please enter a URL";
+          alert(str)
+          return ;
+    }
+    progressFunc();
+    
     if (is_file) {
       const file = input.files[0];
       console.log(file);
@@ -91,9 +97,12 @@
           .then(response => response.json())
           .then(data => {
             console.log(data);
-            text.style.display = "block";
+
             progressBarContainer.style.display = 'none';
-            text.textContent = data.text;
+            sessionStorage.setItem('result',data.data);
+            window.location.href=window.location.origin+"/result";
+           
+            
           })
           .catch(error => {
 
@@ -107,7 +116,7 @@
       }
     }
     else{
-     
+        
         console.log(url)
         fetch("http://127.0.0.1:8000/convert", {
           method: "POST",
@@ -122,9 +131,13 @@
           .then(response => response.json())
           .then(data => {
             console.log(data);
-            text.style.display = "block";
-            progressBarContainer.style.display = 'none';
-            text.textContent = data.text;
+            
+    
+
+            sessionStorage.setItem('result',data.data);
+            window.location.href=window.location.origin+"/result";
+            progress=0;
+  
           })
           .catch(error => {
 

@@ -1,6 +1,7 @@
-from django.shortcuts import render
-from django.shortcuts import render
+from django.shortcuts import render,redirect
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.urls import reverse
 from django.http import HttpResponse
 from django.conf import settings
 import requests
@@ -8,7 +9,6 @@ import os,uuid
 import random,string
 import speech_recognition as sr
 from pydub import AudioSegment
-import pytube
 from .models import Video
 import json
 import aiohttp
@@ -23,31 +23,41 @@ def home_page(request):
     return render(request,'myapp/index.html')
 
 @csrf_exempt
+def show_result(request):
+    # some code to generate context data
+   
+    return render(request,'myapp/transcription_result.html')
+
+
+
+@csrf_exempt
 def download_video(request):
     data=json.loads(request.body)
     video_url=data['video_url']
-   
     is_file=data['file']
+    print(video_url)
     print(is_file)
     if is_file:
-      
         video_data = base64.b64decode(video_url)
-        filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4' # You can change the filename and extension as per your requirement
-        filepath = os.path.join(settings.BASE_DIR,'temp', filename) # change the path as per your project structure
-        print(filepath)
+        filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4'
+        filepath = os.path.join(settings.BASE_DIR,'temp', filename)
         with open(filepath, 'wb') as f:
             f.write(video_data)
         text=convert_to_audio(filename)
-        return JsonResponse({'text':text})
-    elif not is_file:
-        print(video_url)
-        i=0
-        video=None
-        text=None
-        result="Video Cannot be Parsed,Please try again"
-# Cr    eate a Pafy object
-        while i<100:
-            i+=1
+        video = Video()
+        video.video_url = video_url
+        video.created_at = timezone.now()
+        video.transcript = text
+        video.save()
+        return JsonResponse({'data':text})
+
+    else:
+        i = 0
+        video = None
+        text = None
+        result = "Video Cannot be Parsed, Please try again"
+        while i < 100:
+            i += 1
             print(i)
             try:
                 video = YouTube(video_url) 
@@ -55,21 +65,32 @@ def download_video(request):
                 filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4'
                 stream.download(os.path.join(settings.BASE_DIR,'temp'),filename=filename)
                 text=convert_to_audio(filename)
-                print("text:",text)
-                result=text
-                return JsonResponse({'text':text})
+                video = Video()
+                video.video_url = video_url
+                video.created_at = timezone.now()
+                video.transcript = text
+                video.save()
+                return JsonResponse({'data':text})
             except:
                 try:
                     stream = video.streams.filter(progressive=True).order_by('resolution').first()
                     filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.mp4'
                     stream.download(os.path.join(settings.BASE_DIR,'temp'),filename=filename)
                     text=convert_to_audio(filename)
-                    print("text:",text)
                     result=text
-                    return JsonResponse({'text':text})
+                    video = Video()
+                    video.video_url = video_url
+                    video.created_at = timezone.now()
+                    video.transcript = text
+                    video.save()
+                    return JsonResponse({'data':text})
                 except:
-                    time.sleep(2)
-        return JsonResponse({'text':result})
+                    time.sleep(1)
+                 
+        context = {'data': result}
+        return JsonResponse({'data':'video cannot be parsed, please try again'})
+
+
 
 # def download_video(video_url):
 
@@ -106,6 +127,7 @@ def convert_to_audio(filename):
         response = HttpResponse(f.read(), content_type='audio/wav')
         response['Content-Disposition'] = 'attachment; filename=example_audio.wav'
         text=print_transcribe(audio_filename)
+        print("transribed:",text)
         return text
 
 
@@ -114,6 +136,12 @@ def print_transcribe(filename):
     # get path of the audio file
     audio_path = os.path.join(settings.BASE_DIR,'temp',filename)
     print(audio_path)
+    sound=AudioSegment.from_file(audio_path)
+    sound=sound.high_pass_filter(1000)
+    sound=sound.low_pass_filter(1000)
+    audio_filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)) + '.wav'
+    audio_path = os.path.join(settings.BASE_DIR,'temp',audio_filename)
+    sound.export(audio_path,format="wav")
     # create a recognizer instance
     r = sr.Recognizer()
 
@@ -135,33 +163,3 @@ def print_transcribe(filename):
     
     # return the transcribed text as a response
     return text
-# @csrf_exempt
-# def convert_video_to_audio(request):
-#     if request.method == 'POST':
-#         youtube_url = json.loads(request.body)['video_url']
-#         print(youtube_url)
-#         if youtube_url:
-#             try:
-#                 print(1)
-#                 yt = YouTube(youtube_url)
-#                 print(2)
-#                 print(yt)
-#                 stream = yt.streams.filter(only_audio=True).first()
-#                 print(3)
-#                 output_path = stream.download()
-#                 output_file_name = os.path.splitext(output_path)[0] + '.mp3'
-#                 print(4)
-#                 clip = mp.AudioFileClip(output_path)
-#                 print(5)
-#                 clip.write_audiofile(output_file_name)
-
-#                 clip.close()
-#                 print(6)
-#                 shutil.rmtree(os.path.dirname(output_path))
-#                 return JsonResponse({'success': True, 'file_path': output_file_name})
-#             except Exception as e:
-#                 return JsonResponse({'success': False, 'error': str(e)})
-#         else:
-#             return JsonResponse({'success': False, 'error': 'Please provide a YouTube URL'})
-#     else:
-#         return JsonResponse({'success': False, 'error': 'Invalid request method'})
